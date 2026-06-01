@@ -10,11 +10,17 @@ This project focuses on the clarification of highly turbid water using chemical 
 
 ## Chemical Reactions
 When FeCl₃ hits the water, it dissociates and reacts with water molecules (hydrolysis):
+
 FeCl₃ → Fe³⁺ + 3Cl⁻
+
 Fe³⁺ + 3H₂O → Fe(OH)₃↓ + 3H⁺
+
 Overall Reaction:
+
 FeCl₃ + 3H₂O → Fe(OH)₃↓ + 3HCl
+
 The Fe(OH)₃ forms a heavy, reddish-brown gelatinous precipitate that traps the suspended bentonite particles. Because this reaction releases hydrogen ions (H⁺), it causes a severe drop in pH as the chemical dose increases.
+
 ## Results & Data
 
 * Initial Water Quality: pH = 7.41 | Turbidity = 128 NTU
