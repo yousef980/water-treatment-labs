@@ -36,7 +36,7 @@ The Fe(OH)₃ forms a heavy, reddish-brown gelatinous precipitate that traps the
 
 The turbidity removal efficiency was calculated using:
 R (%) = [(T₀ - Tf) / T₀] × 100
-
+![Jar-Test Optimization Curve](jar_test_curve.png)
 ## Key Findings & Discussion
 * The Optimal Dose: Beaker 1 (28.6 mg/L) gave the best result, dropping the turbidity from 128 NTU down to 1.24 NTU—a massive 99% removal efficiency that easily meets clean water standards.
 * The Danger of Overdosing: Pushing the dose past the optimum (Beakers 4 and 5) actually made the water cloudy again. This happens because too much coagulant restabilizes the particles and partially dissolves the flocs back into the water due to extreme acidity.
