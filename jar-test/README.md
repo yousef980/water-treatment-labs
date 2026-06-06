@@ -1,6 +1,9 @@
 Project 1: Coagulation-Flocculation Optimization (Jar-Test)
+
 Introduction
+
 This project focuses on the clarification of highly turbid water using chemical coagulation. In the lab, we simulated turbid surface water using a bentonite clay suspension (128 NTU) and tested different doses of Ferric Chloride (FeCl₃) to find the exact amount needed to clear the water.
+
 ## The Lab Process
 
    1. Preparation: Prepared 6 beakers with 700 mL of the turbid bentonite water.
