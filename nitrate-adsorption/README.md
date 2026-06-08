@@ -1,4 +1,4 @@
-# Project 5: Nitrate (NO3-) Adsorption Study on Powdered Activated Carbon
+# Project: Nitrate (NO3-) Adsorption Study on Powdered Activated Carbon
 
 ## Introduction
 Nitrate ($\text{NO}_3^{-}$) contamination in groundwater and surface water resources is an escalating environmental and public health crisis, primarily driven by the intensive application of nitrogen-based agricultural fertilizers, raw industrial effluents, and domestic wastewater seepage. Surpassing the World Health Organization (WHO) maximum contaminant limit of $50\text{ mg/L}$ poses severe health hazards, such as methemoglobinemia ("blue baby syndrome") in infants, and accelerates the ecological destruction of aquatic habitats via eutrophication.
