@@ -1,4 +1,4 @@
-# Project 1: Coagulation-Flocculation Optimization via Jar-Testing
+# Project : Coagulation-Flocculation Optimization via Jar-Testing
 
 ## Introduction
 Surface water resources frequently carry high levels of colloidal stability, resulting in elevated turbidity caused by microscopic suspended particles (such as clays, silts, and organic matter). Because these fine particles carry negative surface electrical charges, they naturally repel each other and remain permanently suspended in water, making simple gravity sedimentation impossible.
