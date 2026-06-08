@@ -1,4 +1,4 @@
-# Project 6: Water Hardness Mitigation via Lime-Soda Softening
+# Project: Water Hardness Mitigation via Lime-Soda Softening
 
 ## Introduction
 Water hardness—measured as the Total Hydrotimetric Title ($\text{TH}$)—is dictated by the concentration of multivalent metallic cations dissolved in solution, predominantly Calcium ($\text{Ca}^{2+}$) and Magnesium ($\text{Mg}^{2+}$). High hardness levels trigger heavy scaling inside boilerplate systems, cooling towers, and domestic pipelines, resulting in dramatic thermal transfer inefficiencies and structural clogging.
