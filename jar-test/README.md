@@ -50,7 +50,7 @@ The laboratory configuration uses a standard multi-place jar-test apparatus to e
 
 ## Performance Evaluation Curve
 
-![Jar Test Coagulation Curve](jar_test_coagulation_curve.png)
+![jar_test_coagulation_curve.png](jar_test_coagulation_curve.png)
 
 ---
 
