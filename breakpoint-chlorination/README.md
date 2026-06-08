@@ -1,4 +1,4 @@
-# Project 2: Break-point Chlorination Study
+# Project: Break-point Chlorination Study
 
 ## Introduction
 This study investigates the behavior of chlorine when added to a water sample (tap water) to determine the exact "break-point". The goal is to find the minimum dose required to satisfy the water's chemical demand and ensure a stable residual for disinfection.
