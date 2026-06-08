@@ -1,4 +1,4 @@
-# Project 3: Total Suspended Solids (TSS) Gravimetric Analysis
+# Project: Total Suspended Solids (TSS) Gravimetric Analysis
 
 ## Introduction
 This project assesses the physical quality of a water sample by measuring the concentration of Total Suspended Solids (TSS). Tracking TSS is a fundamental operation in water engineering because suspended matter increases turbidity, degrades aquatic habitats, and physically shields pathogenic bacteria from disinfectant chemicals like chlorine or UV light.
