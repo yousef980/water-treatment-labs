@@ -1,4 +1,4 @@
-# Project 4: Iron (Fe) & Manganese (Mn) Removal Study
+# Project: Iron (Fe) & Manganese (Mn) Removal Study
 
 ## Introduction
 Iron ($Fe$) and Manganese ($Mn$) are among the most common metallic contaminants found in natural water resources, particularly within deep groundwater aquifers. When concentrations surpass strict regulatory thresholds, they degrade organoleptic quality by introducing a bitter metallic taste, discoloring the water matrix, and generating thick chemical scaling deposits inside industrial distribution grids. 
