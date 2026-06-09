@@ -10,8 +10,14 @@ The Gram stain differentiates bacteria based on cell wall structure:
 
 
 
-[Image of Gram staining procedure steps](gram_stain_steps.png)
+## Gram Staining Procedure (Analytical Flow)
 
+1. **Smear Preparation:** Heat-fix bacterial sample on a glass slide.
+2. **Primary Stain (Crystal Violet):** 1 min (Colors all cells purple).
+3. **Mordant (Iodine):** 1 min (Sets the dye in Gram+ cell walls).
+4. **Decolorization (Alcohol/Acetone):** 5-10 sec (Crucial step: Gram- cells turn colorless).
+5. **Counterstain (Safranin/Fuchsin):** 30 sec (Colors Gram- cells pink/red).
+6. **Microscopy:** Observation under $100\times$ oil immersion.
 
 ## Microscopic Results
 Observations under $100\times$ oil immersion:
