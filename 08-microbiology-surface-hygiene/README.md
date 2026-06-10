@@ -11,7 +11,7 @@ We evaluated microbial presence using two methods:
 
 2. **Cutaneous Load:** Fingerprint comparison of non-disinfected vs. disinfected skin.
    
-   ![clean_unclean finger bacteria](clean_unclean_finger_bacteria.jpg) 
+   ![Clean_unclean finger bacteria](clean_unclean_finger_bacteria.jpg) 
 
 | Test Method | Observation | Evidence |
 | :--- | :--- | :--- |
