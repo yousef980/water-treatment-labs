@@ -20,7 +20,7 @@ jobs:
     - name: Install computing tools
       run: |
         python -m pip install --upgrade pip
-        pip install pandas matplotlib pyinstaller
+        pip install pandas matplotlib pyinstaller openpyxl
 
     - name: Locate and Compile master suite executable
       run: |
