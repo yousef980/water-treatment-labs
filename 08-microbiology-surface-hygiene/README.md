@@ -7,7 +7,7 @@ To quantify microbial contamination in indoor air (sedimentation) and on human s
 We evaluated microbial presence using two methods:
 1. **Airborne Load:** Passive sedimentation over 10 minutes.
    
- ![Air sedimentation](air_bacteria.png)
+ ![air_bacteria](air_bacteria.png)
 
 2. **Cutaneous Load:** Fingerprint comparison of non-disinfected vs. disinfected skin.
    
