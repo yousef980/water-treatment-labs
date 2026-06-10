@@ -22,4 +22,4 @@ We evaluated microbial presence using two methods:
 The air test established a baseline environmental microbial load of 9 CFU/10 min. The fingerprint test provided a clear visual comparison: the "unclean" finger showed high microbial density, while the "disinfected" finger confirmed the efficacy of our hygiene protocol.
 
 ## Conclusion
-This TP illustrates the critical importance of aseptic technique in laboratory environments. The results confirm that hand hygiene is a vital barrier against cross-contamination, a fundamental principle for any environmental engineering laboratory.
+This lab report illustrates the critical importance of aseptic technique in laboratory environments. The results confirm that hand hygiene is a vital barrier against cross-contamination, a fundamental principle for any environmental engineering laboratory.
