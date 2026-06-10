@@ -1,1 +1,1 @@
-my first repo where i put my lab experience and experiments in water treatment as a Master's 1 Student in enviormental engineering ( not that exciting ones but still), i hope someone finds this useful 
+my first repo where i put my lab experience and experiments in water treatment as a Master's 1 Student in Enviormental Engineering ( not that exciting ones but still), i hope someone finds this useful 
