@@ -135,11 +135,11 @@ def parse_block_to_df(block):
 # ═══════════════════════════════════════════════════════════════════════════
 #  MAIN APP
 # ═══════════════════════════════════════════════════════════════════════════
-class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
+class labapp.pyuaLabs(TkinterDnD.Tk if _DND else tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("AQUALABS v2 — Water Treatment Suite")
+        self.title("labapp.pyUALABS v2 — Water Treatment Suite")
         self.geometry("1300x820")
         self.configure(bg=C["bg"])
         self.minsize(1000, 640)
