@@ -22,12 +22,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas matplotlib pyinstaller
 
-    - name: Compile master suite executable
+    # This searches every folder for labapp.py and compiles it wherever it is hidden
+    name: Locate and Compile master suite executable
       run: |
-        pyinstaller --onefile labapp.py
+        $filePath = (Get-ChildItem -Recurse -Filter labapp.py).FullName
+        if (-not $filePath) { throw "Error: labapp.py could not be found anywhere in your repository folders!" }
+        echo "Found script at: $filePath"
+        pyinstaller --onefile $filePath
 
-    - name: Deliver executable package
+    name: Deliver executable package
       uses: actions/upload-artifact@v4
       with:
         name: Water-Treatment-Lab-Suite-Windows
-        path: dist/app.exe
+        path: dist/*.exe
