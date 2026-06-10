@@ -24,7 +24,7 @@ jobs:
 
     - name: Compile master suite executable
       run: |
-        pyinstaller --onefile app.py
+        pyinstaller --onefile labapp.py
 
     - name: Deliver executable package
       uses: actions/upload-artifact@v4
