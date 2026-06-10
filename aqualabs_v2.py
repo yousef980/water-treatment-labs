@@ -1,20 +1,12 @@
 """
 AQUALABS v2 — Advanced Water Treatment Processing Suite
 Environmental Engineering Laboratory Tool
-Yousef W. — M1 Environmental Engineering, Bouira University
 
-Fixes in v2:
-  - Dual-model isotherm: auto-detects Langmuir vs Freundlich columns in one CSV
-  - Drag-and-drop file import (tkinterdnd2 with fallback to dialog)
-  - Labs 06–09 are fully implemented
-  - Millimeter-paper style grid on all plots
-  - Proper x/y axis labels on every graph
-  - Annotations replaced with scatter markers + text boxes (no full-width lines)
-  - Breakpoint / optimal dose shown with a small triangle marker, not axvline
-  - Multi-table CSV: user picks which table to use via a dropdown
-  - Export panel: PNG, CSV, PDF per graph
-  - Startup splash to mask load time
-  - Modernized UI: clean card layout, better typography, status bar
+Fixes in v2.1 (Monochrome Noir Edition):
+  - True Black & White high-contrast UI
+  - Neon vivid curves for matplotlib graphs
+  - Fixed Lab 5 control clipping
+  - Custom footer signature
 """
 
 import os
@@ -43,22 +35,22 @@ try:
 except ImportError:
     _DND = False
 
-# ── palette ─────────────────────────────────────────────────────────────────
+# ── STRICT BLACK & WHITE PALETTE ────────────────────────────────────────────
 C = {
-    "bg":       "#0d0f1a",
-    "surface":  "#151824",
-    "card":     "#1c2030",
-    "border":   "#252a3a",
-    "accent":   "#38bdf8",
-    "green":    "#34d399",
-    "amber":    "#fbbf24",
-    "red":      "#f87171",
-    "purple":   "#a78bfa",
-    "text":     "#e2e8f0",
-    "sub":      "#94a3b8",
-    "muted":    "#475569",
-    "mm_major": "#1e2840",
-    "mm_minor": "#161c2e",
+    "bg":       "#000000",    # Pure True Black
+    "surface":  "#000000",    # Sidebar / Backgrounds
+    "card":     "#101010",    # Subtle dark gray for entry areas / panels
+    "border":   "#FFFFFF",    # Crisp white borders
+    "accent":   "#00E5FF",    # Electric Cyan
+    "green":    "#00E676",    # Neon Green
+    "amber":    "#FFEA00",    # Neon Yellow
+    "red":      "#FF1744",    # Vivid Crimson
+    "purple":   "#D500F9",    # Neon Purple
+    "text":     "#FFFFFF",    # High-visibility White text
+    "sub":      "#A0A0A0",    # Light gray for minor labels
+    "muted":    "#555555",    # Darker gray
+    "mm_major": "#222222",    # Graph major grid
+    "mm_minor": "#111111",    # Graph minor grid
 }
 
 FONT_MONO  = ("Consolas",  9)
@@ -70,35 +62,35 @@ FONT_SMALL = ("Segoe UI",  8)
 # ── millimeter-paper axes helper ────────────────────────────────────────────
 def mm_axes(ax, xlabel="", ylabel="", title="", facecolor=None):
     fc = facecolor or C["card"]
-    ax.set_facecolor(fc)
+    ax.set_facecolor("#000000")
     ax.figure.set_facecolor(fc)
     # minor grid every 1 unit, major every 5
     ax.xaxis.set_minor_locator(ticker.AutoMinorLocator(5))
     ax.yaxis.set_minor_locator(ticker.AutoMinorLocator(5))
     ax.grid(which="major", color=C["mm_major"], linewidth=0.8, linestyle="-")
     ax.grid(which="minor", color=C["mm_minor"], linewidth=0.4, linestyle="-")
-    ax.tick_params(colors=C["sub"], labelsize=8, which="both")
+    ax.tick_params(colors=C["text"], labelsize=8, which="both")
     for spine in ax.spines.values():
         spine.set_edgecolor(C["border"])
-    ax.set_xlabel(xlabel, color=C["sub"], fontsize=9, labelpad=6)
-    ax.set_ylabel(ylabel, color=C["sub"], fontsize=9, labelpad=6)
+        spine.set_linewidth(1)
+    ax.set_xlabel(xlabel, color=C["text"], fontsize=9, fontweight="bold", labelpad=6)
+    ax.set_ylabel(ylabel, color=C["text"], fontsize=9, fontweight="bold", labelpad=6)
     if title:
-        ax.set_title(title, color=C["text"], fontsize=9, fontweight="bold", pad=8)
+        ax.set_title(title, color=C["text"], fontsize=10, fontweight="bold", pad=8)
 
 def annotate_point(ax, x, y, label, color):
     """Small triangle marker + text box instead of full axvline."""
-    ax.plot(x, y, marker="v", color=color, markersize=9, zorder=5)
+    ax.plot(x, y, marker="v", color=color, markersize=10, zorder=5)
     ax.annotate(
         label,
         xy=(x, y), xytext=(10, 12), textcoords="offset points",
         fontsize=8, color=color, fontweight="bold",
-        bbox=dict(boxstyle="round,pad=0.3", fc=C["card"], ec=color, lw=0.8),
-        arrowprops=dict(arrowstyle="-", color=color, lw=0.8),
+        bbox=dict(boxstyle="round,pad=0.3", fc=C["card"], ec=color, lw=1),
+        arrowprops=dict(arrowstyle="-", color=color, lw=1.5),
     )
 
 # ── multi-table CSV detector ─────────────────────────────────────────────────
 def detect_tables(text):
-    """Split a text file into separate numeric blocks separated by blank lines."""
     blocks, current = [], []
     for line in text.splitlines():
         stripped = line.strip()
@@ -110,7 +102,6 @@ def detect_tables(text):
             current.append(stripped)
     if current:
         blocks.append("\n".join(current))
-    # only keep blocks that contain at least 2 numeric rows
     valid = []
     for b in blocks:
         rows = [r for r in b.splitlines() if re.search(r"\d", r)]
@@ -144,8 +135,14 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self.configure(bg=C["bg"])
         self.minsize(1000, 640)
 
-        self._current_fig   = None   # track last matplotlib figure for export
-        self._current_df    = None   # track last dataframe for CSV export
+        # Style override for TTK elements
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure(".", background=C["bg"], foreground=C["text"], fieldbackground=C["card"])
+        style.configure("TProgressbar", background=C["accent"])
+
+        self._current_fig   = None
+        self._current_df    = None
         self.current_frame  = None
         self.nav_history    = []
 
@@ -160,8 +157,8 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
         w, h = 420, 200
         splash.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
-        splash.configure(bg=C["surface"])
-        tk.Label(splash, text="A Q U A L A B S", bg=C["surface"], fg=C["accent"],
+        splash.configure(bg=C["surface"], highlightbackground=C["border"], highlightthickness=1)
+        tk.Label(splash, text="A Q U A L A B S", bg=C["surface"], fg=C["text"],
                  font=("Consolas", 22, "bold")).pack(pady=(30, 6))
         tk.Label(splash, text="Water Treatment Laboratory Suite  v2",
                  bg=C["surface"], fg=C["sub"], font=FONT_UI).pack()
@@ -176,11 +173,11 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     # ── layout ───────────────────────────────────────────────────────────────
     def _build_layout(self):
         # sidebar
-        self.sidebar = tk.Frame(self, bg=C["surface"], width=256)
+        self.sidebar = tk.Frame(self, bg=C["surface"], width=256, highlightbackground=C["border"], highlightthickness=1)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        tk.Label(self.sidebar, text="AQUALABS", bg=C["surface"], fg=C["accent"],
+        tk.Label(self.sidebar, text="AQUALABS", bg=C["surface"], fg=C["text"],
                  font=("Consolas", 14, "bold")).pack(pady=(18, 2), anchor="w", padx=20)
         tk.Label(self.sidebar, text="Water Treatment Suite",
                  bg=C["surface"], fg=C["muted"], font=FONT_SMALL).pack(anchor="w", padx=20)
@@ -231,16 +228,20 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self.workspace = tk.Frame(right, bg=C["bg"])
         self.workspace.pack(expand=True, fill="both", padx=20, pady=(16, 0))
 
-        # status bar
+        # signature bar (Bottom)
+        signature_bar = tk.Frame(right, bg="#050505", height=28, highlightbackground=C["border"], highlightthickness=1)
+        signature_bar.pack(fill="x", side="bottom")
+        tk.Label(signature_bar, text="Developed by: Youcef Youcef  |  M1 Génie de l'Environnement — Université de Bouira",
+                 bg="#050505", fg=C["text"], font=("Arial", 9, "bold"), anchor="e",
+                 padx=15).pack(side="right", pady=3)
+
+        # status bar (Above signature)
         self.status_var = tk.StringVar(value="Ready")
         status_bar = tk.Frame(right, bg=C["surface"], height=26)
         status_bar.pack(fill="x", side="bottom")
         tk.Label(status_bar, textvariable=self.status_var,
-                 bg=C["surface"], fg=C["muted"], font=FONT_SMALL, anchor="w",
+                 bg=C["surface"], fg=C["accent"], font=FONT_SMALL, anchor="w",
                  padx=12).pack(side="left")
-        tk.Label(status_bar, text="AQUALABS v2  ·  Génie de l'Environnement",
-                 bg=C["surface"], fg=C["muted"], font=FONT_SMALL, anchor="e",
-                 padx=12).pack(side="right")
 
     def _set_status(self, msg):
         self.status_var.set(msg)
@@ -290,10 +291,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         }.get(key, self._view_dashboard)()
 
     # ── file import ──────────────────────────────────────────────────────────
-    def _import_file(self, ce_entry=None, qe_entry=None,
-                     x_entry=None, y_entry=None,
-                     col_selector=None):
-        """Universal import. Returns DataFrame or None."""
+    def _import_file(self, ce_entry=None, qe_entry=None, x_entry=None, y_entry=None, col_selector=None):
         path = filedialog.askopenfilename(
             filetypes=[
                 ("All Lab Formats",  "*.csv *.xlsx *.xls *.txt"),
@@ -306,8 +304,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             return None
         return self._load_path(path, ce_entry, qe_entry, x_entry, y_entry)
 
-    def _load_path(self, path, ce_entry=None, qe_entry=None,
-                   x_entry=None, y_entry=None):
+    def _load_path(self, path, ce_entry=None, qe_entry=None, x_entry=None, y_entry=None):
         ext = os.path.splitext(path)[1].lower()
         try:
             if ext == ".csv":
@@ -334,7 +331,6 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             self._current_df = df
             self._set_status(f"Loaded: {os.path.basename(path)}  ({len(df)} rows, {df.shape[1]} cols)")
 
-            # populate entries
             col0 = df.iloc[:, 0].tolist()
             col1 = df.iloc[:, 1].tolist() if df.shape[1] > 1 else []
 
@@ -352,7 +348,6 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             return None
 
     def _pick_table(self, tables):
-        """Ask user which table to use when multiple are detected."""
         win = tk.Toplevel(self)
         win.title("Multiple tables detected")
         win.configure(bg=C["surface"])
@@ -399,7 +394,6 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
 
     # ── shared module layout ─────────────────────────────────────────────────
     def _module_layout(self, title):
-        """Returns (ctrl_panel, display_panel)."""
         hdr = tk.Frame(self.current_frame, bg=C["bg"])
         hdr.pack(fill="x", pady=(0, 12))
         tk.Label(hdr, text=title, bg=C["bg"], fg=C["text"],
@@ -408,11 +402,11 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         body = tk.Frame(self.current_frame, bg=C["bg"])
         body.pack(expand=True, fill="both")
 
-        ctrl = tk.Frame(body, bg=C["card"], width=252, padx=14, pady=14)
+        ctrl = tk.Frame(body, bg=C["card"], width=270, padx=14, pady=14, highlightbackground=C["border"], highlightthickness=1)
         ctrl.pack(side="left", fill="y", padx=(0, 14))
-        ctrl.pack_propagate(False)
+        # REMOVED pack_propagate(False) so Lab 5 buttons do not get clipped!
 
-        disp = tk.Frame(body, bg=C["card"], padx=8, pady=8)
+        disp = tk.Frame(body, bg=C["card"], padx=8, pady=8, highlightbackground=C["border"], highlightthickness=1)
         disp.pack(side="left", expand=True, fill="both")
 
         return ctrl, disp
@@ -422,10 +416,10 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
                  font=FONT_SMALL, anchor="w").pack(fill="x", pady=(6, 1))
 
     def _entry(self, parent, default=""):
-        e = tk.Entry(parent, bg=C["surface"], fg=C["text"], bd=0,
+        e = tk.Entry(parent, bg=C["surface"], fg=C["accent"], bd=0,
                      insertbackground=C["accent"],
                      highlightthickness=1, highlightcolor=C["accent"],
-                     highlightbackground=C["border"], font=FONT_MONO)
+                     highlightbackground=C["muted"], font=FONT_MONO)
         e.pack(fill="x", pady=(0, 2))
         e.insert(0, default)
         return e
@@ -437,7 +431,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
 
     def _import_btn(self, parent, **kw):
         tk.Button(parent, text="📂  Import file (CSV / Excel / TXT)",
-                  bg=C["surface"], fg=C["accent"], font=FONT_UI, bd=0,
+                  bg=C["surface"], fg=C["text"], font=FONT_UI, bd=1,
                   pady=6, cursor="hand2",
                   command=lambda: self._import_file(**kw)).pack(fill="x", pady=(0, 10))
 
@@ -448,43 +442,39 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     # ── export panel ─────────────────────────────────────────────────────────
     def _export_panel(self, parent):
         tk.Frame(parent, bg=C["border"], height=1).pack(fill="x", pady=8)
-        tk.Label(parent, text="Export", bg=C["card"], fg=C["sub"],
+        tk.Label(parent, text="Export", bg=C["card"], fg=C["text"],
                  font=FONT_SMALL).pack(anchor="w")
         row = tk.Frame(parent, bg=C["card"])
         row.pack(fill="x", pady=3)
-        for label, cmd in [("PNG", self._export_png),
-                            ("PDF", self._export_pdf),
-                            ("CSV", self._export_csv)]:
+        for label, cmd in [("PNG", self._export_png), ("PDF", self._export_pdf), ("CSV", self._export_csv)]:
             tk.Button(row, text=label, bg=C["surface"], fg=C["accent"],
-                      font=FONT_SMALL, bd=0, padx=10, pady=4,
+                      font=FONT_SMALL, bd=1, padx=10, pady=4,
                       cursor="hand2", command=cmd).pack(side="left", padx=2)
 
     def _export_png(self):
         if not self._current_fig:
-            messagebox.showinfo("Export", "Run an analysis first."); return
-        path = filedialog.asksaveasfilename(defaultextension=".png",
-               filetypes=[("PNG Image", "*.png")])
+            messagebox.showinfo("Export", "Run an analysis first.")
+            return
+        path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Image", "*.png")])
         if path:
-            self._current_fig.savefig(path, dpi=180, bbox_inches="tight",
-                                      facecolor=self._current_fig.get_facecolor())
+            self._current_fig.savefig(path, dpi=180, bbox_inches="tight", facecolor=self._current_fig.get_facecolor())
             self._set_status(f"Saved PNG → {path}")
 
     def _export_pdf(self):
         if not self._current_fig:
-            messagebox.showinfo("Export", "Run an analysis first."); return
-        path = filedialog.asksaveasfilename(defaultextension=".pdf",
-               filetypes=[("PDF Document", "*.pdf")])
+            messagebox.showinfo("Export", "Run an analysis first.")
+            return
+        path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF Document", "*.pdf")])
         if path:
             with PdfPages(path) as pdf:
-                pdf.savefig(self._current_fig, bbox_inches="tight",
-                            facecolor=self._current_fig.get_facecolor())
+                pdf.savefig(self._current_fig, bbox_inches="tight", facecolor=self._current_fig.get_facecolor())
             self._set_status(f"Saved PDF → {path}")
 
     def _export_csv(self):
         if self._current_df is None:
-            messagebox.showinfo("Export", "No data to export yet."); return
-        path = filedialog.asksaveasfilename(defaultextension=".csv",
-               filetypes=[("CSV File", "*.csv")])
+            messagebox.showinfo("Export", "No data to export yet.")
+            return
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV File", "*.csv")])
         if path:
             self._current_df.to_csv(path, index=False)
             self._set_status(f"Saved CSV → {path}")
@@ -504,7 +494,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
                  bg=C["bg"], fg=C["text"], font=FONT_TITLE).pack(anchor="w", pady=(0, 4))
         tk.Label(self.current_frame,
                  text="M1 Environmental Engineering  ·  Université Akli Mohand Oulhadj – Bouira",
-                 bg=C["bg"], fg=C["muted"], font=FONT_SMALL).pack(anchor="w", pady=(0, 14))
+                 bg=C["bg"], fg=C["sub"], font=FONT_SMALL).pack(anchor="w", pady=(0, 14))
 
         canvas = tk.Canvas(self.current_frame, bg=C["bg"], bd=0, highlightthickness=0)
         sb = ttk.Scrollbar(self.current_frame, orient="vertical", command=canvas.yview)
@@ -516,43 +506,29 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         sb.pack(side="right", fill="y")
 
         modules = [
-            ("01", "Coagulation & Jar Test",
-             "Turbidity removal curve · optimal coagulant dose detection", C["accent"], "JarTest"),
-            ("02", "Breakpoint Chlorination",
-             "Chlorine demand curve · breakpoint identification", C["amber"], "Chlorination"),
-            ("03", "Suspended Solids (TSS)",
-             "Gravimetric MES determination · filter differential mass", C["green"], "TSS"),
-            ("04", "Iron & Manganese Removal",
-             "Oxidation-precipitation-filtration groundwater workflow", C["purple"], "IronManganese"),
-            ("05", "Nitrate Adsorption Kinetics",
-             "Langmuir & Freundlich isotherm fitting · dual-model from one file", C["accent"], "Nitrate"),
-            ("06", "Lime-Soda Softening",
-             "TH / TAC / hardness reduction · Ca(OH)₂ & Na₂CO₃ dosing", C["green"], "LimeSoda"),
-            ("07", "Gram Staining",
-             "G+/G− identification · morphology data entry & summary", C["amber"], "GramStaining"),
-            ("08", "Surface Hygiene",
-             "Swab colony count tracking · contamination index", C["purple"], "SurfaceHygiene"),
-            ("09", "Water Quality · Coliforms",
-             "MPN / colony count · potability assessment vs. OMS/Algerian norms", C["red"], "WaterQuality"),
+            ("01", "Coagulation & Jar Test", "Turbidity removal curve · optimal coagulant dose detection", C["accent"], "JarTest"),
+            ("02", "Breakpoint Chlorination", "Chlorine demand curve · breakpoint identification", C["amber"], "Chlorination"),
+            ("03", "Suspended Solids (TSS)", "Gravimetric MES determination · filter differential mass", C["green"], "TSS"),
+            ("04", "Iron & Manganese Removal", "Oxidation-precipitation-filtration groundwater workflow", C["purple"], "IronManganese"),
+            ("05", "Nitrate Adsorption Kinetics", "Langmuir & Freundlich isotherm fitting · dual-model from one file", C["accent"], "Nitrate"),
+            ("06", "Lime-Soda Softening", "TH / TAC / hardness reduction · Ca(OH)₂ & Na₂CO₃ dosing", C["green"], "LimeSoda"),
+            ("07", "Gram Staining", "G+/G− identification · morphology data entry & summary", C["amber"], "GramStaining"),
+            ("08", "Surface Hygiene", "Swab colony count tracking · contamination index", C["purple"], "SurfaceHygiene"),
+            ("09", "Water Quality · Coliforms", "MPN / colony count · potability assessment vs. OMS/Algerian norms", C["red"], "WaterQuality"),
         ]
 
         for num, name, desc, accent, route in modules:
-            card = tk.Frame(gf, bg=C["card"], padx=16, pady=12)
-            card.pack(fill="x", pady=3)
+            card = tk.Frame(gf, bg=C["card"], padx=16, pady=12, highlightbackground=C["muted"], highlightthickness=1)
+            card.pack(fill="x", pady=4)
             left = tk.Frame(card, bg=C["card"])
             left.pack(side="left", fill="both", expand=True)
-            tk.Label(left,
-                     text=f"  {num}  ", bg=accent, fg=C["bg"],
-                     font=("Consolas", 9, "bold")).pack(side="left",
-                                                        anchor="n", pady=2, padx=(0, 10))
+            tk.Label(left, text=f"  {num}  ", bg=accent, fg=C["bg"],
+                     font=("Consolas", 9, "bold")).pack(side="left", anchor="n", pady=2, padx=(0, 10))
             info = tk.Frame(left, bg=C["card"])
             info.pack(side="left", fill="both")
-            tk.Label(info, text=name, bg=C["card"], fg=C["text"],
-                     font=FONT_HEAD, anchor="w").pack(anchor="w")
-            tk.Label(info, text=desc, bg=C["card"], fg=C["sub"],
-                     font=FONT_SMALL, anchor="w").pack(anchor="w")
-            tk.Button(card, text="Open →", bg=C["surface"], fg=accent,
-                      font=FONT_SMALL, bd=0, padx=10, pady=4, cursor="hand2",
+            tk.Label(info, text=name, bg=C["card"], fg=C["text"], font=FONT_HEAD, anchor="w").pack(anchor="w")
+            tk.Label(info, text=desc, bg=C["card"], fg=C["sub"], font=FONT_SMALL, anchor="w").pack(anchor="w")
+            tk.Button(card, text="Open →", bg=C["surface"], fg=accent, font=FONT_SMALL, bd=1, padx=10, pady=4, cursor="hand2",
                       command=lambda r=route: self.navigate(r)).pack(side="right", anchor="center")
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -560,34 +536,24 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     # ══════════════════════════════════════════════════════════════════════════
     def _view_jartest(self):
         ctrl, disp = self._module_layout("01 · Coagulation & Flocculation — Jar Test")
-        self._import_btn(ctrl, x_entry=None, y_entry=None)  # will wire below
-
+        self._import_btn(ctrl, x_entry=None, y_entry=None)
         self._label(ctrl, "Coagulant dose (mg/L)  — comma separated")
         ex = self._entry(ctrl, "10, 20, 30, 40, 50, 60")
         self._label(ctrl, "Residual turbidity (NTU)")
         ey = self._entry(ctrl, "14.2, 8.5, 1.8, 4.3, 9.1, 15.4")
-
-        # rewire import button with actual entries
-        ctrl.winfo_children()[0].configure(
-            command=lambda: self._import_file(x_entry=ex, y_entry=ey))
+        ctrl.winfo_children()[0].configure(command=lambda: self._import_file(x_entry=ex, y_entry=ey))
 
         self._label(ctrl, "Coagulant type")
         coag_var = tk.StringVar(value="FeCl₃")
-        ttk.Combobox(ctrl, textvariable=coag_var,
-                     values=["FeCl₃", "Al₂(SO₄)₃", "PAC", "Other"],
-                     state="readonly").pack(fill="x", pady=(0, 8))
+        ttk.Combobox(ctrl, textvariable=coag_var, values=["FeCl₃", "Al₂(SO₄)₃", "PAC", "Other"], state="readonly").pack(fill="x", pady=(0, 8))
 
-        self._btn(ctrl, "▶  Run Analysis", C["green"],
-                  lambda: self._run_jartest(ex, ey, coag_var, disp))
+        self._btn(ctrl, "▶  Run Analysis", C["green"], lambda: self._run_jartest(ex, ey, coag_var, disp))
         self._export_panel(ctrl)
 
-        # drag-and-drop
         if _DND:
             disp.drop_target_register(DND_FILES)
-            disp.dnd_bind("<<Drop>>",
-                lambda e: self._load_path(e.data.strip('{}'), x_entry=ex, y_entry=ey))
-            tk.Label(disp, text="Drop a file here  or use Import above",
-                     bg=C["card"], fg=C["muted"], font=FONT_SMALL).pack(expand=True)
+            disp.dnd_bind("<<Drop>>", lambda e: self._load_path(e.data.strip('{}'), x_entry=ex, y_entry=ey))
+            tk.Label(disp, text="Drop a file here  or use Import above", bg=C["card"], fg=C["muted"], font=FONT_SMALL).pack(expand=True)
 
     def _run_jartest(self, ex, ey, coag_var, disp):
         try:
@@ -595,21 +561,17 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             y = [float(v.strip()) for v in ey.get().split(",")]
             if len(x) != len(y): raise ValueError
         except Exception:
-            messagebox.showerror("Input Error", "Doses and turbidities must match in length."); return
+            messagebox.showerror("Input Error", "Doses and turbidities must match in length.")
+            return
 
         df = pd.DataFrame({"Dose": x, "Turbidity": y})
         self._current_df = df
         opt = df.loc[df["Turbidity"].idxmin()]
 
         fig, ax = plt.subplots(figsize=(6, 4), facecolor=C["card"])
-        mm_axes(ax, xlabel=f"{coag_var.get()} dose (mg/L)",
-                ylabel="Residual turbidity (NTU)",
-                title="Turbidity Removal Curve — Jar Test")
-        ax.plot(x, y, color=C["accent"], linewidth=1.8,
-                marker="o", markersize=5, label="Turbidity")
-        annotate_point(ax, opt["Dose"], opt["Turbidity"],
-                       f"Optimal dose\n{opt['Dose']} mg/L → {opt['Turbidity']} NTU",
-                       C["green"])
+        mm_axes(ax, xlabel=f"{coag_var.get()} dose (mg/L)", ylabel="Residual turbidity (NTU)", title="Turbidity Removal Curve — Jar Test")
+        ax.plot(x, y, color=C["accent"], linewidth=2.5, marker="o", markersize=6, label="Turbidity")
+        annotate_point(ax, opt["Dose"], opt["Turbidity"], f"Optimal dose\n{opt['Dose']} mg/L → {opt['Turbidity']} NTU", C["green"])
         ax.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=8, framealpha=0.8)
         plt.tight_layout()
         self._embed_fig(fig, disp)
@@ -621,17 +583,12 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     def _view_chlorination(self):
         ctrl, disp = self._module_layout("02 · Breakpoint Chlorination")
         self._import_btn(ctrl)
-
         self._label(ctrl, "Chlorine dose applied (mg/L)")
         ex = self._entry(ctrl, "0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0")
         self._label(ctrl, "Total residual chlorine (mg/L)")
         ey = self._entry(ctrl, "0.4, 0.8, 1.1, 0.6, 0.2, 0.5, 1.0, 1.5")
-
-        ctrl.winfo_children()[0].configure(
-            command=lambda: self._import_file(x_entry=ex, y_entry=ey))
-
-        self._btn(ctrl, "▶  Plot Breakpoint Curve", C["amber"],
-                  lambda: self._run_chlorination(ex, ey, disp))
+        ctrl.winfo_children()[0].configure(command=lambda: self._import_file(x_entry=ex, y_entry=ey))
+        self._btn(ctrl, "▶  Plot Breakpoint Curve", C["amber"], lambda: self._run_chlorination(ex, ey, disp))
         self._export_panel(ctrl)
 
     def _run_chlorination(self, ex, ey, disp):
@@ -640,21 +597,16 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             y = [float(v.strip()) for v in ey.get().split(",")]
             if len(x) != len(y): raise ValueError
         except Exception:
-            messagebox.showerror("Input Error", "Arrays must match in length."); return
+            messagebox.showerror("Input Error", "Arrays must match in length.")
+            return
 
         df = pd.DataFrame({"Dose": x, "Residual": y})
         self._current_df = df
-
-        # breakpoint = minimum in the hump-trough region (skip first point)
         search = y[1:] if len(y) > 3 else y
         bp_idx = y.index(min(search[1:-1] if len(search) > 3 else search))
 
         fig, ax = plt.subplots(figsize=(6, 4), facecolor=C["card"])
-        mm_axes(ax, xlabel="Chlorine dose (mg/L)",
-                ylabel="Total residual Cl (mg/L)",
-                title="Breakpoint Chlorination Curve")
-
-        # zones A B C D shading
+        mm_axes(ax, xlabel="Chlorine dose (mg/L)", ylabel="Total residual Cl (mg/L)", title="Breakpoint Chlorination Curve")
         zones = [
             (0, x[1],        "#1a2a1a", "A: Cl₂ reacts\nwith organics"),
             (x[1], x[bp_idx],"#2a1a1a", "B: Chloramines\noxidised"),
@@ -662,13 +614,10 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         ]
         for x0, x1, col, lbl in zones:
             ax.axvspan(x0, x1, alpha=0.3, color=col)
-            ax.text((x0 + x1) / 2, max(y) * 0.92, lbl,
-                    color=C["muted"], fontsize=7, ha="center")
+            ax.text((x0 + x1) / 2, max(y) * 0.92, lbl, color=C["sub"], fontsize=7, ha="center")
 
-        ax.plot(x, y, color=C["amber"], linewidth=1.8, marker="s",
-                markersize=5, label="Total residual Cl")
-        annotate_point(ax, x[bp_idx], y[bp_idx],
-                       f"Breakpoint\n{x[bp_idx]} mg/L", C["red"])
+        ax.plot(x, y, color=C["amber"], linewidth=2.5, marker="s", markersize=6, label="Total residual Cl")
+        annotate_point(ax, x[bp_idx], y[bp_idx], f"Breakpoint\n{x[bp_idx]} mg/L", C["red"])
         ax.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=8)
         plt.tight_layout()
         self._embed_fig(fig, disp)
@@ -688,8 +637,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self._label(ctrl, "Number of replicates")
         erep = self._entry(ctrl, "3")
 
-        self._btn(ctrl, "▶  Calculate TSS", C["green"],
-                  lambda: self._run_tss(ev, em1, em2, erep, disp))
+        self._btn(ctrl, "▶  Calculate TSS", C["green"], lambda: self._run_tss(ev, em1, em2, erep, disp))
         self._export_panel(ctrl)
 
     def _run_tss(self, ev, em1, em2, erep, disp):
@@ -699,32 +647,20 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             m2   = float(em2.get())
             nrep = int(erep.get())
         except Exception:
-            messagebox.showerror("Input Error", "Check all fields."); return
+            messagebox.showerror("Input Error", "Check all fields.")
+            return
 
         tss = ((m2 - m1) * 1e6) / V   # mg/L
-        self._current_df = pd.DataFrame({
-            "Parameter": ["V (mL)", "m₁ (g)", "m₂ (g)", "Δm (g)", "TSS (mg/L)"],
-            "Value":     [V, m1, m2, round(m2-m1, 4), round(tss, 2)],
-        })
-
+        self._current_df = pd.DataFrame({"Parameter": ["V (mL)", "m₁ (g)", "m₂ (g)", "Δm (g)", "TSS (mg/L)"], "Value": [V, m1, m2, round(m2-m1, 4), round(tss, 2)]})
         self._clear_disp(disp)
-        # result card
         frame = tk.Frame(disp, bg=C["card"])
         frame.pack(expand=True)
-        tk.Label(frame, text="TSS Result", bg=C["card"], fg=C["sub"],
-                 font=FONT_SMALL).pack(pady=(20, 4))
-        tk.Label(frame, text=f"{tss:.2f} mg/L",
-                 bg=C["card"], fg=C["green"], font=("Consolas", 28, "bold")).pack()
-        tk.Label(frame, text=f"Δm = {(m2-m1)*1000:.2f} mg   ·   V = {V} mL   ·   n = {nrep} replicates",
-                 bg=C["card"], fg=C["sub"], font=FONT_SMALL).pack(pady=(6, 20))
+        tk.Label(frame, text="TSS Result", bg=C["card"], fg=C["sub"], font=FONT_SMALL).pack(pady=(20, 4))
+        tk.Label(frame, text=f"{tss:.2f} mg/L", bg=C["card"], fg=C["accent"], font=("Consolas", 28, "bold")).pack()
+        tk.Label(frame, text=f"Δm = {(m2-m1)*1000:.2f} mg   ·   V = {V} mL   ·   n = {nrep} replicates", bg=C["card"], fg=C["sub"], font=FONT_SMALL).pack(pady=(6, 20))
+        tk.Label(frame, text="Formula:  TSS = (m₂ − m₁) × 10⁶ / V", bg=C["card"], fg=C["muted"], font=FONT_MONO).pack()
 
-        # formula
-        tk.Label(frame,
-                 text="Formula:  TSS = (m₂ − m₁) × 10⁶ / V",
-                 bg=C["card"], fg=C["muted"], font=FONT_MONO).pack()
-
-        potable = "✔ Below 30 mg/L — meets WHO potability threshold" if tss < 30 \
-                  else "✘ Exceeds 30 mg/L — treatment required"
+        potable = "✔ Below 30 mg/L — meets WHO potability threshold" if tss < 30 else "✘ Exceeds 30 mg/L — treatment required"
         color = C["green"] if tss < 30 else C["red"]
         tk.Label(frame, text=potable, bg=C["card"], fg=color, font=FONT_UI).pack(pady=10)
         self._set_status(f"TSS = {tss:.2f} mg/L")
@@ -744,57 +680,38 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         eMnf = self._entry(ctrl, "0.03")
         self._label(ctrl, "Treatment stages applied")
         stages_var = tk.StringVar(value="Aeration + Filtration")
-        ttk.Combobox(ctrl, textvariable=stages_var,
-                     values=["Aeration only", "Aeration + Filtration",
-                             "Aeration + Chlorination + Filtration",
-                             "KMnO₄ Oxidation + Filtration"],
-                     state="readonly").pack(fill="x", pady=(0, 8))
+        ttk.Combobox(ctrl, textvariable=stages_var, values=["Aeration only", "Aeration + Filtration", "Aeration + Chlorination + Filtration", "KMnO₄ Oxidation + Filtration"], state="readonly").pack(fill="x", pady=(0, 8))
 
-        self._btn(ctrl, "▶  Evaluate Removal", C["purple"],
-                  lambda: self._run_iron_mn(eC0, eCf, eMn0, eMnf, stages_var, disp))
+        self._btn(ctrl, "▶  Evaluate Removal", C["purple"], lambda: self._run_iron_mn(eC0, eCf, eMn0, eMnf, stages_var, disp))
         self._export_panel(ctrl)
 
     def _run_iron_mn(self, eC0, eCf, eMn0, eMnf, stages_var, disp):
         try:
-            C0 = float(eC0.get()); Cf  = float(eCf.get())
-            M0 = float(eMn0.get()); Mf = float(eMnf.get())
+            C0, Cf, M0, Mf = float(eC0.get()), float(eCf.get()), float(eMn0.get()), float(eMnf.get())
         except Exception:
-            messagebox.showerror("Input Error", "Check all fields."); return
+            messagebox.showerror("Input Error", "Check all fields.")
+            return
 
         fe_eff  = (C0 - Cf) / C0 * 100
         mn_eff  = (M0 - Mf) / M0 * 100
         fe_ok   = Cf <= 0.2
         mn_ok   = Mf <= 0.05
 
-        self._current_df = pd.DataFrame({
-            "Parameter":   ["Fe₀", "Fe_f", "Fe efficiency %", "Mn₀", "Mn_f", "Mn efficiency %"],
-            "Value":       [C0, Cf, round(fe_eff,2), M0, Mf, round(mn_eff,2)],
-        })
+        self._current_df = pd.DataFrame({"Parameter": ["Fe₀", "Fe_f", "Fe efficiency %", "Mn₀", "Mn_f", "Mn efficiency %"], "Value": [C0, Cf, round(fe_eff,2), M0, Mf, round(mn_eff,2)]})
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 4), facecolor=C["card"])
-        for ax, name, before, after, limit, unit in [
-            (ax1, "Iron (Fe)", C0, Cf, 0.2, "mg/L"),
-            (ax2, "Manganese (Mn)", M0, Mf, 0.05, "mg/L"),
-        ]:
-            mm_axes(ax, xlabel="Stage", ylabel=f"{name} ({unit})",
-                    title=f"{name} Removal")
-            ax.bar(["Before", "After"], [before, after],
-                   color=[C["red"], C["green"]], width=0.4, zorder=3)
-            ax.axhline(limit, color=C["amber"], linestyle="--", linewidth=1,
-                       label=f"WHO limit {limit} {unit}")
+        for ax, name, before, after, limit, unit in [(ax1, "Iron (Fe)", C0, Cf, 0.2, "mg/L"), (ax2, "Manganese (Mn)", M0, Mf, 0.05, "mg/L")]:
+            mm_axes(ax, xlabel="Stage", ylabel=f"{name} ({unit})", title=f"{name} Removal")
+            ax.bar(["Before", "After"], [before, after], color=[C["red"], C["green"]], width=0.4, zorder=3)
+            ax.axhline(limit, color=C["amber"], linestyle="--", linewidth=1, label=f"WHO limit {limit} {unit}")
             ax.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=7)
             for xi, val in enumerate([before, after]):
-                ax.text(xi, val + 0.01, f"{val}", ha="center",
-                        color=C["text"], fontsize=8)
+                ax.text(xi, val + 0.01, f"{val}", ha="center", color=C["text"], fontsize=8)
 
-        plt.suptitle(f"Treatment: {stages_var.get()}",
-                     color=C["sub"], fontsize=8, y=1.01)
+        plt.suptitle(f"Treatment: {stages_var.get()}", color=C["text"], fontsize=10, y=1.01)
         plt.tight_layout()
         self._embed_fig(fig, disp)
-        self._set_status(
-            f"Fe removal: {fe_eff:.1f}%  {'✔' if fe_ok else '✘'}  |  "
-            f"Mn removal: {mn_eff:.1f}%  {'✔' if mn_ok else '✘'}"
-        )
+        self._set_status(f"Fe removal: {fe_eff:.1f}%  {'✔' if fe_ok else '✘'}  |  Mn removal: {mn_eff:.1f}%  {'✔' if mn_ok else '✘'}")
 
     # ══════════════════════════════════════════════════════════════════════════
     #  05 · NITRATE ADSORPTION — DUAL MODEL
@@ -802,23 +719,14 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     def _view_nitrate(self):
         ctrl, disp = self._module_layout("05 · Nitrate Adsorption Kinetics — Langmuir & Freundlich")
 
-        # mode
         mode_var = tk.StringVar(value="single")
-        tk.Label(ctrl, text="Data mode", bg=C["card"], fg=C["sub"],
-                 font=FONT_SMALL).pack(anchor="w", pady=(4, 2))
+        tk.Label(ctrl, text="Data mode", bg=C["card"], fg=C["sub"], font=FONT_SMALL).pack(anchor="w", pady=(4, 2))
         mode_frame = tk.Frame(ctrl, bg=C["card"])
         mode_frame.pack(fill="x", pady=(0, 8))
-        tk.Radiobutton(mode_frame, text="Single qe column",
-                       variable=mode_var, value="single",
-                       bg=C["card"], fg=C["text"], selectcolor=C["surface"],
-                       font=FONT_SMALL).pack(side="left")
-        tk.Radiobutton(mode_frame, text="Two qe columns (Lang | Freun)",
-                       variable=mode_var, value="dual",
-                       bg=C["card"], fg=C["text"], selectcolor=C["surface"],
-                       font=FONT_SMALL).pack(side="left")
+        tk.Radiobutton(mode_frame, text="Single qe column", variable=mode_var, value="single", bg=C["card"], fg=C["text"], selectcolor=C["surface"], font=FONT_SMALL).pack(side="left")
+        tk.Radiobutton(mode_frame, text="Two qe columns (Lang | Freun)", variable=mode_var, value="dual", bg=C["card"], fg=C["text"], selectcolor=C["surface"], font=FONT_SMALL).pack(side="left")
 
         self._import_btn(ctrl)
-
         self._label(ctrl, "Ce — equilibrium concentration (mg/L)")
         ece = self._entry(ctrl, "0.82, 1.54, 2.91, 4.63, 6.78, 9.12, 12.35, 16.20, 20.87")
         self._label(ctrl, "qe — Langmuir adsorbed capacity (mg/g)")
@@ -826,16 +734,13 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self._label(ctrl, "qe — Freundlich column (leave blank if single)")
         eqf = self._entry(ctrl, "0.39, 0.49, 0.61, 0.72, 0.82, 0.91, 1.01, 1.12, 1.22")
 
-        ctrl.winfo_children()[3].configure(   # import button
-            command=lambda: self._import_nitrate(ece, eql, eqf, mode_var))
+        ctrl.winfo_children()[3].configure(command=lambda: self._import_nitrate(ece, eql, eqf, mode_var))
 
-        self._btn(ctrl, "▶  Fit Isotherms", C["accent"],
-                  lambda: self._run_nitrate(ece, eql, eqf, mode_var, disp))
+        self._btn(ctrl, "▶  Fit Isotherms", C["accent"], lambda: self._run_nitrate(ece, eql, eqf, mode_var, disp))
         self._export_panel(ctrl)
 
     def _import_nitrate(self, ece, eql, eqf, mode_var):
-        path = filedialog.askopenfilename(
-            filetypes=[("All Lab Formats", "*.csv *.xlsx *.xls *.txt")])
+        path = filedialog.askopenfilename(filetypes=[("All Lab Formats", "*.csv *.xlsx *.xls *.txt")])
         if not path: return
         ext = os.path.splitext(path)[1].lower()
         try:
@@ -843,8 +748,7 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
                 text = open(path, encoding="utf-8", errors="replace").read()
                 tables = detect_tables(text)
                 from io import StringIO
-                df = self._pick_table(tables) if len(tables) > 1 \
-                     else pd.read_csv(StringIO(text))
+                df = self._pick_table(tables) if len(tables) > 1 else pd.read_csv(StringIO(text))
             elif ext in (".xlsx", ".xls"):
                 df = pd.read_excel(path)
             else:
@@ -852,7 +756,8 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
                 df = parse_block_to_df(text)
 
             if df is None or df.shape[0] < 2:
-                messagebox.showerror("Import", "Not enough data rows."); return
+                messagebox.showerror("Import", "Not enough data rows.")
+                return
 
             cols = df.shape[1]
             ece.delete(0, tk.END); ece.insert(0, ", ".join(str(v) for v in df.iloc[:,0]))
@@ -875,7 +780,8 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             Ce  = np.array([float(v.strip()) for v in ece.get().split(",")])
             qeL = np.array([float(v.strip()) for v in eql.get().split(",")])
         except Exception:
-            messagebox.showerror("Input Error", "Ce / qe (Langmuir) contain invalid values."); return
+            messagebox.showerror("Input Error", "Ce / qe (Langmuir) contain invalid values.")
+            return
 
         dual = mode_var.get() == "dual" and eqf.get().strip()
         if dual:
@@ -883,12 +789,11 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
                 qeF = np.array([float(v.strip()) for v in eqf.get().split(",")])
                 if len(qeF) != len(Ce): raise ValueError
             except Exception:
-                messagebox.showerror("Input Error",
-                    "Freundlich qe column length must match Ce."); return
+                messagebox.showerror("Input Error", "Freundlich qe column length must match Ce.")
+                return
         else:
             qeF = None
 
-        # ── Langmuir linearization  Ce/qe = Ce/qmax + 1/(b*qmax) ──
         def langmuir_fit(ce, qe):
             y = ce / qe
             sl, ic = np.polyfit(ce, y, 1)
@@ -897,7 +802,6 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             R2   = 1 - np.sum((y - (sl*ce+ic))**2) / np.sum((y - y.mean())**2)
             return qmax, b, sl, ic, R2
 
-        # ── Freundlich linearization  ln(qe) = ln(Kf) + (1/n)*ln(Ce) ──
         def freundlich_fit(ce, qe):
             lce, lqe = np.log(ce), np.log(qe)
             sl, ic = np.polyfit(lce, lqe, 1)
@@ -906,7 +810,6 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             R2 = 1 - np.sum((lqe-(sl*lce+ic))**2) / np.sum((lqe-lqe.mean())**2)
             return Kf, n, sl, ic, R2
 
-        # ── fit both models on both datasets ──
         results = {}
         datasets = {"Langmuir data": (Ce, qeL)}
         if dual:
@@ -916,56 +819,44 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             try:
                 qmax, b, sl_l, ic_l, r2_l = langmuir_fit(ce, qe)
                 results[ds_name] = {"lang": (qmax, b, sl_l, ic_l, r2_l, ce, qe)}
-            except Exception:
-                pass
+            except Exception: pass
             try:
                 Kf, n, sl_f, ic_f, r2_f = freundlich_fit(ce, qe)
-                if ds_name not in results:
-                    results[ds_name] = {}
+                if ds_name not in results: results[ds_name] = {}
                 results[ds_name]["freun"] = (Kf, n, sl_f, ic_f, r2_f, ce, qe)
-            except Exception:
-                pass
+            except Exception: pass
 
         ncols = 2 if dual else 2
         nrows = len(datasets)
         fig, axes = plt.subplots(nrows, ncols, figsize=(8, 3.8 * nrows), facecolor=C["card"])
-        if nrows == 1:
-            axes = [axes]
+        if nrows == 1: axes = [axes]
 
         summary_lines = []
 
         for row, (ds_name, fits) in enumerate(results.items()):
             ax_l, ax_f = axes[row][0], axes[row][1]
 
-            # Langmuir plot
             if "lang" in fits:
                 qmax, b, sl_l, ic_l, r2_l, ce, qe = fits["lang"]
                 y_plot = ce / qe
-                mm_axes(ax_l, xlabel="Ce (mg/L)", ylabel="Ce / qe (g/L)",
-                        title=f"Langmuir — {ds_name}  (R²={r2_l:.4f})")
-                ax_l.scatter(ce, y_plot, color=C["accent"], s=30, zorder=4, label="Data")
+                mm_axes(ax_l, xlabel="Ce (mg/L)", ylabel="Ce / qe (g/L)", title=f"Langmuir — {ds_name}  (R²={r2_l:.4f})")
+                ax_l.scatter(ce, y_plot, color=C["accent"], s=40, zorder=4, label="Data")
                 ce_line = np.linspace(ce.min(), ce.max(), 200)
-                ax_l.plot(ce_line, sl_l*ce_line + ic_l, color=C["green"],
-                          linewidth=1.5, linestyle="--", label="Linear fit")
+                ax_l.plot(ce_line, sl_l*ce_line + ic_l, color=C["green"], linewidth=2.5, linestyle="--", label="Linear fit")
                 ax_l.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=7)
-                summary_lines.append(
-                    f"[{ds_name}] Langmuir: qmax={qmax:.3f} mg/g  b={b:.4f} L/mg  R²={r2_l:.4f}")
+                summary_lines.append(f"[{ds_name}] Langmuir: qmax={qmax:.3f} mg/g  b={b:.4f} L/mg  R²={r2_l:.4f}")
             else:
                 ax_l.set_visible(False)
 
-            # Freundlich plot
             if "freun" in fits:
                 Kf, n, sl_f, ic_f, r2_f, ce, qe = fits["freun"]
-                mm_axes(ax_f, xlabel="ln(Ce)", ylabel="ln(qe)",
-                        title=f"Freundlich — {ds_name}  (R²={r2_f:.4f})")
+                mm_axes(ax_f, xlabel="ln(Ce)", ylabel="ln(qe)", title=f"Freundlich — {ds_name}  (R²={r2_f:.4f})")
                 lce = np.log(ce)
-                ax_f.scatter(lce, np.log(qe), color=C["amber"], s=30, zorder=4, label="Data")
+                ax_f.scatter(lce, np.log(qe), color=C["amber"], s=40, zorder=4, label="Data")
                 lce_line = np.linspace(lce.min(), lce.max(), 200)
-                ax_f.plot(lce_line, sl_f*lce_line + ic_f, color=C["red"],
-                          linewidth=1.5, linestyle=":", label="Linear fit")
+                ax_f.plot(lce_line, sl_f*lce_line + ic_f, color=C["red"], linewidth=2.5, linestyle=":", label="Linear fit")
                 ax_f.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=7)
-                summary_lines.append(
-                    f"[{ds_name}] Freundlich: Kf={Kf:.4f}  1/n={sl_f:.4f}  n={n:.3f}  R²={r2_f:.4f}")
+                summary_lines.append(f"[{ds_name}] Freundlich: Kf={Kf:.4f}  1/n={sl_f:.4f}  n={n:.3f}  R²={r2_f:.4f}")
             else:
                 ax_f.set_visible(False)
 
@@ -973,10 +864,8 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self._embed_fig(fig, disp)
         self._set_status("  |  ".join(summary_lines[:2]))
 
-        # summary text below graph
         for line in summary_lines:
-            tk.Label(disp, text=line, bg=C["card"], fg=C["accent"],
-                     font=FONT_SMALL).pack(anchor="w", padx=6)
+            tk.Label(disp, text=line, bg=C["card"], fg=C["accent"], font=FONT_SMALL).pack(anchor="w", padx=6)
 
     # ══════════════════════════════════════════════════════════════════════════
     #  06 · LIME-SODA SOFTENING
@@ -994,99 +883,59 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self._label(ctrl, "Flow rate Q (m³/h)")
         eq    = self._entry(ctrl, "10")
 
-        self._btn(ctrl, "▶  Calculate Reagent Doses", C["green"],
-                  lambda: self._run_limesoda(eth0, ethc, etac, etgt, eq, disp))
+        self._btn(ctrl, "▶  Calculate Reagent Doses", C["green"], lambda: self._run_limesoda(eth0, ethc, etac, etgt, eq, disp))
         self._export_panel(ctrl)
 
     def _run_limesoda(self, eth0, ethc, etac, etgt, eq, disp):
         try:
-            TH0  = float(eth0.get())
-            THc  = float(ethc.get())
-            TAC  = float(etac.get())
-            TH_t = float(etgt.get())
-            Q    = float(eq.get())
+            TH0, THc, TAC, TH_t, Q = float(eth0.get()), float(ethc.get()), float(etac.get()), float(etgt.get()), float(eq.get())
         except Exception:
-            messagebox.showerror("Input Error", "Check all fields."); return
+            messagebox.showerror("Input Error", "Check all fields.")
+            return
 
-        # Non-carbonate hardness
         TH_nc = max(TH0 - THc, 0)
-        # Ca(OH)₂ dose to remove carbonate hardness (MW Ca(OH)₂ = 74, CaCO₃ = 100)
-        lime_dose  = TAC * (74 / 100)          # mg/L
-        # Na₂CO₃ dose to remove non-carbonate hardness (MW Na₂CO₃ = 106)
-        soda_dose  = TH_nc * (106 / 100)        # mg/L
+        lime_dose  = TAC * (74 / 100)
+        soda_dose  = TH_nc * (106 / 100)
         removal    = min((TH0 - TH_t) / TH0 * 100, 100)
         lime_kg_h  = lime_dose * Q / 1000
         soda_kg_h  = soda_dose * Q / 1000
 
-        self._current_df = pd.DataFrame({
-            "Parameter": ["TH₀", "TH_carb", "TH_nc", "TAC", "TH_target",
-                          "Ca(OH)₂ dose mg/L", "Na₂CO₃ dose mg/L",
-                          "Removal %", "Ca(OH)₂ kg/h", "Na₂CO₃ kg/h"],
-            "Value": [TH0, THc, TH_nc, TAC, TH_t,
-                      round(lime_dose,2), round(soda_dose,2),
-                      round(removal,1), round(lime_kg_h,3), round(soda_kg_h,3)],
-        })
+        self._current_df = pd.DataFrame({"Parameter": ["TH₀", "TH_carb", "TH_nc", "TAC", "TH_target", "Ca(OH)₂ dose mg/L", "Na₂CO₃ dose mg/L", "Removal %", "Ca(OH)₂ kg/h", "Na₂CO₃ kg/h"], "Value": [TH0, THc, TH_nc, TAC, TH_t, round(lime_dose,2), round(soda_dose,2), round(removal,1), round(lime_kg_h,3), round(soda_kg_h,3)]})
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 4), facecolor=C["card"])
+        mm_axes(ax1, xlabel="Hardness type", ylabel="mg CaCO₃/L", title="Hardness Composition")
+        ax1.bar(["Total\nHardness", "Carbonate\nHardness", "Non-carbonate\nHardness", "Target"], [TH0, THc, TH_nc, TH_t], color=[C["red"], C["amber"], C["purple"], C["green"]], zorder=3)
 
-        # hardness breakdown bar
-        mm_axes(ax1, xlabel="Hardness type", ylabel="mg CaCO₃/L",
-                title="Hardness Composition")
-        ax1.bar(["Total\nHardness", "Carbonate\nHardness", "Non-carbonate\nHardness", "Target"],
-                [TH0, THc, TH_nc, TH_t],
-                color=[C["red"], C["amber"], C["purple"], C["green"]], zorder=3)
-
-        # reagent doses bar
-        mm_axes(ax2, xlabel="Reagent", ylabel="Dose (mg/L)",
-                title="Reagent Requirements")
-        ax2.bar(["Ca(OH)₂\n(Lime)", "Na₂CO₃\n(Soda)"],
-                [lime_dose, soda_dose],
-                color=[C["accent"], C["green"]], zorder=3)
+        mm_axes(ax2, xlabel="Reagent", ylabel="Dose (mg/L)", title="Reagent Requirements")
+        ax2.bar(["Ca(OH)₂\n(Lime)", "Na₂CO₃\n(Soda)"], [lime_dose, soda_dose], color=[C["accent"], C["green"]], zorder=3)
         for xi, val in enumerate([lime_dose, soda_dose]):
-            ax2.text(xi, val + 1, f"{val:.1f}", ha="center",
-                     color=C["text"], fontsize=9)
+            ax2.text(xi, val + 1, f"{val:.1f}", ha="center", color=C["text"], fontsize=9)
 
         plt.tight_layout()
         self._embed_fig(fig, disp)
-        self._set_status(
-            f"Ca(OH)₂: {lime_dose:.1f} mg/L ({lime_kg_h:.3f} kg/h)  |  "
-            f"Na₂CO₃: {soda_dose:.1f} mg/L ({soda_kg_h:.3f} kg/h)  |  "
-            f"Removal: {removal:.1f}%"
-        )
+        self._set_status(f"Ca(OH)₂: {lime_dose:.1f} mg/L ({lime_kg_h:.3f} kg/h)  |  Na₂CO₃: {soda_dose:.1f} mg/L ({soda_kg_h:.3f} kg/h)  |  Removal: {removal:.1f}%")
 
     # ══════════════════════════════════════════════════════════════════════════
     #  07 · GRAM STAINING
     # ══════════════════════════════════════════════════════════════════════════
     def _view_gram_staining(self):
         ctrl, disp = self._module_layout("07 · Gram Staining — Bacterial Identification")
-
         self._label(ctrl, "Sample / isolate ID")
         eid   = self._entry(ctrl, "Sample_01")
         self._label(ctrl, "Gram reaction")
         gram_var = tk.StringVar(value="Gram-positive (+)")
-        ttk.Combobox(ctrl, textvariable=gram_var,
-                     values=["Gram-positive (+)", "Gram-negative (−)", "Variable / indeterminate"],
-                     state="readonly").pack(fill="x", pady=(0, 6))
+        ttk.Combobox(ctrl, textvariable=gram_var, values=["Gram-positive (+)", "Gram-negative (−)", "Variable / indeterminate"], state="readonly").pack(fill="x", pady=(0, 6))
         self._label(ctrl, "Cell morphology")
         morph_var = tk.StringVar(value="Coccus")
-        ttk.Combobox(ctrl, textvariable=morph_var,
-                     values=["Coccus", "Bacillus (rod)", "Spirillum", "Coccobacillus",
-                             "Vibrio", "Spirochete", "Filamentous"],
-                     state="readonly").pack(fill="x", pady=(0, 6))
+        ttk.Combobox(ctrl, textvariable=morph_var, values=["Coccus", "Bacillus (rod)", "Spirillum", "Coccobacillus", "Vibrio", "Spirochete", "Filamentous"], state="readonly").pack(fill="x", pady=(0, 6))
         self._label(ctrl, "Arrangement")
         arr_var = tk.StringVar(value="Single")
-        ttk.Combobox(ctrl, textvariable=arr_var,
-                     values=["Single", "Diplo", "Tetrad", "Sarcina",
-                             "Staphylo (cluster)", "Strepto (chain)"],
-                     state="readonly").pack(fill="x", pady=(0, 6))
+        ttk.Combobox(ctrl, textvariable=arr_var, values=["Single", "Diplo", "Tetrad", "Sarcina", "Staphylo (cluster)", "Strepto (chain)"], state="readonly").pack(fill="x", pady=(0, 6))
         self._label(ctrl, "Catalase test")
         cat_var = tk.StringVar(value="Positive (+)")
-        ttk.Combobox(ctrl, textvariable=cat_var,
-                     values=["Positive (+)", "Negative (−)", "Not tested"],
-                     state="readonly").pack(fill="x", pady=(0, 8))
+        ttk.Combobox(ctrl, textvariable=cat_var, values=["Positive (+)", "Negative (−)", "Not tested"], state="readonly").pack(fill="x", pady=(0, 8))
 
-        self._btn(ctrl, "▶  Generate ID Summary", C["amber"],
-                  lambda: self._run_gram(eid, gram_var, morph_var, arr_var, cat_var, disp))
+        self._btn(ctrl, "▶  Generate ID Summary", C["amber"], lambda: self._run_gram(eid, gram_var, morph_var, arr_var, cat_var, disp))
         self._export_panel(ctrl)
 
     def _run_gram(self, eid, gram_var, morph_var, arr_var, cat_var, disp):
@@ -1095,56 +944,30 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         morph  = morph_var.get()
         arr    = arr_var.get()
         cat    = cat_var.get()
-
-        # simple genus suggestion logic
         gp = "+" in gram
         genus_hint = ""
-        if gp and "Coccus" in morph:
-            genus_hint = "→ Possible genus: Staphylococcus / Streptococcus / Micrococcus"
-        elif gp and "Bacillus" in morph:
-            genus_hint = "→ Possible genus: Bacillus / Lactobacillus / Clostridium"
-        elif not gp and "Bacillus" in morph:
-            genus_hint = "→ Possible genus: E. coli / Pseudomonas / Salmonella / Klebsiella"
-        elif not gp and "Coccus" in morph:
-            genus_hint = "→ Possible genus: Neisseria / Moraxella"
+        if gp and "Coccus" in morph: genus_hint = "→ Possible genus: Staphylococcus / Streptococcus / Micrococcus"
+        elif gp and "Bacillus" in morph: genus_hint = "→ Possible genus: Bacillus / Lactobacillus / Clostridium"
+        elif not gp and "Bacillus" in morph: genus_hint = "→ Possible genus: E. coli / Pseudomonas / Salmonella / Klebsiella"
+        elif not gp and "Coccus" in morph: genus_hint = "→ Possible genus: Neisseria / Moraxella"
 
-        self._current_df = pd.DataFrame({
-            "Field":  ["Sample ID", "Gram", "Morphology", "Arrangement", "Catalase", "Genus hint"],
-            "Result": [sid, gram, morph, arr, cat, genus_hint],
-        })
-
+        self._current_df = pd.DataFrame({"Field": ["Sample ID", "Gram", "Morphology", "Arrangement", "Catalase", "Genus hint"], "Result": [sid, gram, morph, arr, cat, genus_hint]})
         self._clear_disp(disp)
         card = tk.Frame(disp, bg=C["card"])
         card.pack(expand=True, padx=30, pady=20, fill="both")
-
         color = C["purple"] if gp else C["red"]
-        tk.Label(card, text=sid, bg=C["card"], fg=C["text"],
-                 font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(10, 2))
-        tk.Label(card, text=gram, bg=C["card"], fg=color,
-                 font=("Consolas", 20, "bold")).pack(anchor="w")
+        tk.Label(card, text=sid, bg=C["card"], fg=C["text"], font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(10, 2))
+        tk.Label(card, text=gram, bg=C["card"], fg=color, font=("Consolas", 20, "bold")).pack(anchor="w")
 
-        for label, value in [("Morphology", morph), ("Arrangement", arr),
-                              ("Catalase", cat), ("Genus hint", genus_hint)]:
+        for label, value in [("Morphology", morph), ("Arrangement", arr), ("Catalase", cat), ("Genus hint", genus_hint)]:
             row = tk.Frame(card, bg=C["card"])
             row.pack(fill="x", pady=3)
-            tk.Label(row, text=f"{label}:", bg=C["card"], fg=C["sub"],
-                     font=FONT_SMALL, width=14, anchor="w").pack(side="left")
-            tk.Label(row, text=value, bg=C["card"], fg=C["text"],
-                     font=FONT_UI, anchor="w").pack(side="left")
+            tk.Label(row, text=f"{label}:", bg=C["card"], fg=C["sub"], font=FONT_SMALL, width=14, anchor="w").pack(side="left")
+            tk.Label(row, text=value, bg=C["card"], fg=C["text"], font=FONT_UI, anchor="w").pack(side="left")
 
-        steps = [
-            "1. Crystal violet (primary stain) — 60 s",
-            "2. Gram's iodine (mordant) — 60 s",
-            "3. Acetone/ethanol decolorizer — 10–15 s",
-            "4. Safranin (counterstain) — 60 s",
-            f"5. Result: {'PURPLE → G(+)' if gp else 'PINK/RED → G(−)'}",
-        ]
-        tk.Label(card, text="Protocol steps:", bg=C["card"], fg=C["sub"],
-                 font=FONT_SMALL).pack(anchor="w", pady=(16, 2))
-        for s in steps:
-            tk.Label(card, text=s, bg=C["card"], fg=C["muted"],
-                     font=FONT_MONO, anchor="w").pack(anchor="w")
-
+        steps = ["1. Crystal violet (primary stain) — 60 s", "2. Gram's iodine (mordant) — 60 s", "3. Acetone/ethanol decolorizer — 10–15 s", "4. Safranin (counterstain) — 60 s", f"5. Result: {'PURPLE → G(+)' if gp else 'PINK/RED → G(−)'}"]
+        tk.Label(card, text="Protocol steps:", bg=C["card"], fg=C["sub"], font=FONT_SMALL).pack(anchor="w", pady=(16, 2))
+        for s in steps: tk.Label(card, text=s, bg=C["card"], fg=C["muted"], font=FONT_MONO, anchor="w").pack(anchor="w")
         self._set_status(f"{sid} → {gram}  |  {morph}  |  {arr}")
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -1153,19 +976,15 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
     def _view_surface_hygiene(self):
         ctrl, disp = self._module_layout("08 · Surface Hygiene — Swab Colony Count")
         self._import_btn(ctrl)
-
         self._label(ctrl, "Surface labels  (comma separated)")
         elbl = self._entry(ctrl, "Bench A, Bench B, Door handle, Sink tap, Floor")
         self._label(ctrl, "Colony count (CFU/cm²)  — same order")
         ecfu = self._entry(ctrl, "12, 45, 87, 6, 120")
         self._label(ctrl, "Contamination threshold (CFU/cm²)")
         ethr = self._entry(ctrl, "50")
+        ctrl.winfo_children()[0].configure(command=lambda: self._import_file(x_entry=elbl, y_entry=ecfu))
 
-        ctrl.winfo_children()[0].configure(
-            command=lambda: self._import_file(x_entry=elbl, y_entry=ecfu))
-
-        self._btn(ctrl, "▶  Analyse Swab Results", C["purple"],
-                  lambda: self._run_hygiene(elbl, ecfu, ethr, disp))
+        self._btn(ctrl, "▶  Analyse Swab Results", C["purple"], lambda: self._run_hygiene(elbl, ecfu, ethr, disp))
         self._export_panel(ctrl)
 
     def _run_hygiene(self, elbl, ecfu, ethr, disp):
@@ -1175,32 +994,25 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             thr    = float(ethr.get())
             if len(labels) != len(cfus): raise ValueError
         except Exception:
-            messagebox.showerror("Input Error", "Labels and CFU counts must match."); return
+            messagebox.showerror("Input Error", "Labels and CFU counts must match.")
+            return
 
         df = pd.DataFrame({"Surface": labels, "CFU_per_cm2": cfus})
         self._current_df = df
-
         colors = [C["red"] if c > thr else C["green"] for c in cfus]
 
         fig, ax = plt.subplots(figsize=(6.5, 4), facecolor=C["card"])
-        mm_axes(ax, xlabel="Surface", ylabel="CFU / cm²",
-                title="Surface Contamination Index")
+        mm_axes(ax, xlabel="Surface", ylabel="CFU / cm²", title="Surface Contamination Index")
         bars = ax.bar(labels, cfus, color=colors, zorder=3)
-        ax.axhline(thr, color=C["amber"], linestyle="--", linewidth=1.2,
-                   label=f"Threshold: {thr} CFU/cm²")
+        ax.axhline(thr, color=C["amber"], linestyle="--", linewidth=1.5, label=f"Threshold: {thr} CFU/cm²")
         for bar, val in zip(bars, cfus):
-            ax.text(bar.get_x() + bar.get_width()/2, val + 1,
-                    str(int(val)), ha="center", color=C["text"], fontsize=8)
+            ax.text(bar.get_x() + bar.get_width()/2, val + 1, str(int(val)), ha="center", color=C["text"], fontsize=8)
         ax.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=8)
         plt.xticks(rotation=20, ha="right")
         plt.tight_layout()
         self._embed_fig(fig, disp)
-
         n_fail = sum(1 for c in cfus if c > thr)
-        self._set_status(
-            f"{n_fail}/{len(cfus)} surfaces exceed {thr} CFU/cm²  |  "
-            f"Max: {max(cfus):.0f} @ {labels[cfus.index(max(cfus))]}"
-        )
+        self._set_status(f"{n_fail}/{len(cfus)} surfaces exceed {thr} CFU/cm²  |  Max: {max(cfus):.0f} @ {labels[cfus.index(max(cfus))]}")
 
     # ══════════════════════════════════════════════════════════════════════════
     #  09 · WATER QUALITY — COLIFORMS
@@ -1215,13 +1027,9 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         efc  = self._entry(ctrl, "0, 0, 0, 8, 1")
         self._label(ctrl, "Sampling point")
         src_var = tk.StringVar(value="Distribution network")
-        ttk.Combobox(ctrl, textvariable=src_var,
-                     values=["Source water", "After treatment",
-                             "Distribution network", "Consumer tap"],
-                     state="readonly").pack(fill="x", pady=(0, 8))
+        ttk.Combobox(ctrl, textvariable=src_var, values=["Source water", "After treatment", "Distribution network", "Consumer tap"], state="readonly").pack(fill="x", pady=(0, 8))
 
-        self._btn(ctrl, "▶  Assess Potability", C["red"],
-                  lambda: self._run_water_quality(eid, etc, efc, src_var, disp))
+        self._btn(ctrl, "▶  Assess Potability", C["red"], lambda: self._run_water_quality(eid, etc, efc, src_var, disp))
         self._export_panel(ctrl)
 
     def _run_water_quality(self, eid, etc, efc, src_var, disp):
@@ -1231,9 +1039,9 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
             fc   = [float(v.strip()) for v in efc.get().split(",")]
             if len(ids) != len(tc) or len(tc) != len(fc): raise ValueError
         except Exception:
-            messagebox.showerror("Input Error", "All three lists must be the same length."); return
+            messagebox.showerror("Input Error", "All three lists must be the same length.")
+            return
 
-        # WHO / Algerian norm: TC = 0 CFU/100 mL for treated water
         TC_LIMIT = 0 if "treatment" in src_var.get().lower() or "tap" in src_var.get().lower() else 100
         FC_LIMIT = 0
 
@@ -1244,30 +1052,22 @@ class AquaLabs(TkinterDnD.Tk if _DND else tk.Tk):
         self._current_df = df
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6.5, 5.5), facecolor=C["card"])
-        mm_axes(ax1, xlabel="Sample", ylabel="CFU / 100 mL",
-                title=f"Total Coliforms — {src_var.get()}")
+        mm_axes(ax1, xlabel="Sample", ylabel="CFU / 100 mL", title=f"Total Coliforms — {src_var.get()}")
         tc_colors = [C["green"] if v <= TC_LIMIT else C["red"] for v in tc]
         ax1.bar(ids, tc, color=tc_colors, zorder=3)
-        ax1.axhline(TC_LIMIT, color=C["amber"], linestyle="--",
-                    linewidth=1, label=f"Limit {TC_LIMIT} CFU/100mL")
+        ax1.axhline(TC_LIMIT, color=C["amber"], linestyle="--", linewidth=1.5, label=f"Limit {TC_LIMIT} CFU/100mL")
         ax1.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=7)
 
-        mm_axes(ax2, xlabel="Sample", ylabel="E. coli CFU / 100 mL",
-                title="Fecal Coliforms (E. coli)")
+        mm_axes(ax2, xlabel="Sample", ylabel="E. coli CFU / 100 mL", title="Fecal Coliforms (E. coli)")
         fc_colors = [C["green"] if v == 0 else C["red"] for v in fc]
         ax2.bar(ids, fc, color=fc_colors, zorder=3)
-        ax2.axhline(0, color=C["amber"], linestyle="--", linewidth=1,
-                    label="Limit: 0 CFU/100 mL")
+        ax2.axhline(0, color=C["amber"], linestyle="--", linewidth=1.5, label="Limit: 0 CFU/100 mL")
         ax2.legend(facecolor=C["surface"], labelcolor=C["text"], fontsize=7)
 
         plt.tight_layout()
         self._embed_fig(fig, disp)
-
         n_potable = df["Potable"].sum()
-        self._set_status(
-            f"{n_potable}/{len(ids)} samples potable  |  "
-            f"Limit: TC ≤ {TC_LIMIT}  FC = 0  CFU/100 mL  [{src_var.get()}]"
-        )
+        self._set_status(f"{n_potable}/{len(ids)} samples potable  |  Limit: TC ≤ {TC_LIMIT}  FC = 0  CFU/100 mL  [{src_var.get()}]")
 
 
 # ── entry point ──────────────────────────────────────────────────────────────
