@@ -1,7 +1,7 @@
 """
 AQUALABS v2 — Advanced Water Treatment Processing Suite
 Environmental Engineering Laboratory Tool
-Yousef W. — M1 Génie de l'Environnement, Université Bouira
+Yousef W. — M1 Environmental Engineering, Bouira University
 
 Fixes in v2:
   - Dual-model isotherm: auto-detects Langmuir vs Freundlich columns in one CSV
