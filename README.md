@@ -39,4 +39,4 @@ The repository is organized chronologically by experiment type, covering chemica
 ## Connect With Me
 If you are working on similar water treatment research, environmental engineering projects, or chemical automation scripts, let's connect!
 
-* **Email:** Yousef.wy98@gmail.com
+* **Email:** Yousefyousef5355@gmail.com
