@@ -22,6 +22,21 @@ The repository is organized chronologically by experiment type, covering chemica
 
 ---
 
+## The AquaLabs Software Journey (v3.0)
+
+Alongside the laboratory modules, this repository hosts **AquaLabs**, a custom-built desktop application designed to act as a computational chemical engineering simulator for water treatment.
+
+### Trial & Error: The Path to v3.0
+The development of AquaLabs was an iterative journey to build a perfectly portable, standalone, and visually stunning executable that requires **zero installation** on the host machine:
+1. **Initial Prototyping (`v1 / v2`)**: Started with basic data processing scripts and a rudimentary Tkinter GUI.
+2. **The Environment Constraint**: The goal was true portability on an external E: drive without touching the C: drive. I initially tried using a minimal embeddable Python zip, but quickly realized it entirely strips out `tkinter` and `tcl/tk` support by default.
+3. **The Breakthrough**: Solved the UI rendering failure by downloading and unpacking a full, self-contained Python MSI installation directly onto the E: drive (`portable_python_full`).
+4. **Aesthetic Overhaul (`v3`)**: Upgraded from standard Tkinter to `customtkinter`, designing a premium, highly-rounded dark mode UI inspired by modern luxury dashboards (using a bespoke Midnight Ocean palette).
+5. **Domain Enhancements**: Completely refactored the Jar Test module to separate Coagulation (Rapid Mix, seconds) from Flocculation (Slow Mix, minutes) and expanded the chemical catalog to 6 industry coagulants with their respective optimal pH tracking.
+6. **Final Compilation**: Used the isolated portable environment to compile `aqualabs_v3.py` into a single, massive ~50MB `aqualabs_v3.exe` using PyInstaller, ensuring Matplotlib rendering and Pandas calculations work natively out of the box.
+
+---
+
 ## Core Competencies Demonstrated
 
 * **Analytical Techniques:** Titrations, spectrophotometry, gravimetric analysis, and microscopic tracking.

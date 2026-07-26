@@ -1,0 +1,9 @@
+# Do not track the massive portable python folder
+portable_python_full/
+
+# Do not track pyinstaller build artifacts
+build/
+*.spec
+__pycache__/
+
+# We are intentionally tracking dist/aqualabs_v3.exe for the release
